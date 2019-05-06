@@ -1,0 +1,7 @@
+You need to change following in /etc/motion/motion.conf :
+
+on_picture_save /daten/alarming/motion/motion_cb_picshot %f
+on_motion_detected /daten/alarming/motion/motion_cb_detect
+stream_localhost off
+stream_port 8081
+

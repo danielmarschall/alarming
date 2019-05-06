@@ -1,0 +1,15 @@
+#!/usr/bin/php
+<?php
+
+// Der folgende Code resetted das USB-Gerät, da sonst bei einem Neustart von Motion der Fehler "Cannot open video device" kommen kann
+// https://gist.github.com/x2q/5124616
+// https://www.raspberrypi.org/forums/viewtopic.php?t=86265https://www.raspberrypi.org/forums/viewtopic.php?t=86265
+$out = array();
+exec("lsusb", $out, $ec);
+$cont = implode("\n", $out);
+if (preg_match("@Bus (.{3}) Device (.{3}): ID (.{4}):(.{4}) Logitech, Inc. Webcam C270@ismU", $cont, $m)) {
+	system(escapeshellcmd(__DIR__.'/usbreset').' '.escapeshellarg("/dev/bus/usb/".$m[1]."/".$m[2]));
+}
+
+system("service motion start");
+
