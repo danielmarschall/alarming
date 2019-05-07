@@ -9,6 +9,7 @@ import time
 import requests
 import subprocess
 import config
+import threading
 
 g_subscribed = []
 
@@ -25,9 +26,11 @@ class S(BaseHTTPRequestHandler):
 	except:
 		action = None
 
-	output = '''<html>
+	output = '''<!DOCTYPE html>
+<html lang="en">
 
 <head>
+	<meta charset="UTF-8">
 	<title>Motion camera</title>
 </head>
 
@@ -40,7 +43,7 @@ function sleep (time) {
 }
 
 function _toggle_alarm(st) {
-	document.getElementById("pleasewait").innerHTML = ' <i>Bitte warten</i>...';
+	document.getElementById("pleasewait").innerHTML = ' <i>Please wait...</i>';
 	var xhr = new XMLHttpRequest();
 	xhr.onreadystatechange = function () {
 		var DONE = 4; // readyState 4 means the request is done.
@@ -58,23 +61,26 @@ function _toggle_alarm(st) {
 
 	var data = new FormData();
 	data.append('action', st ? 'motion_on'/*1.3.6.1.4.1.37476.2.4.1.100*/ : 'motion_off'/*1.3.6.1.4.1.37476.2.4.1.101*/);
-	xhr.open('POST', '/', true);
+	xhr.open('POST', document.location, true);
 	xhr.send(data);
 }
 
 function onload() {
-	document.getElementById('campic').src = 'http://' + window.location.hostname + ':'''+str(config.motion_stream_port)+'''/';
+	if (document.getElementById('campic') != null) {
+		document.getElementById('campic').src = 'http://' + window.location.hostname + ':'''+str(config.motion_stream_port)+'''/';
+	}
 }
 
 </script>'''
 
 	if ismotionrunning():
-		output = output + '<h2>Motion detection ON</h2>';
-		output = output + '<p><a href="javascript:_toggle_alarm(0)">Disable motion detection</a><span id="pleasewait"></span></p>';
-		output = output + '<p><img id="campic" src="" alt="Camera picture"></p>';
+		output = output + '<h2>Motion detection ON</h2>'
+		output = output + '<p><a href="javascript:_toggle_alarm(0)">Disable motion detection</a><span id="pleasewait"></span></p>'
+		output = output + '<p>Showing camera stream from port {0}. If you don\'t see a picture, please check your configuration or firewall.</p>'.format(config.motion_stream_port)
+		output = output + '<p><img id="campic" src="" alt=""></p>';
 	else:
-		output = output + '<h2>Motion detection OFF</h2>';
-		output = output + '<p><a href="javascript:_toggle_alarm(1)">Enable motion detection</a><span id="pleasewait"></span></p>';
+		output = output + '<h2>Motion detection OFF</h2>'
+		output = output + '<p><a href="javascript:_toggle_alarm(1)">Enable motion detection</a><span id="pleasewait"></span></p>'
 
 	output = output + '<h2>Subscribers</h2>'
 
@@ -97,9 +103,17 @@ function onload() {
     def do_HEAD(self):
 	self._output(200, '')
 
+    def thr_client_notify(self, client_ip, client_port, server_targets):
+		print "ALERT: Will alert client http://{0}:{1} and tell that targets {2} sent an alert".format(client_ip, client_port, server_targets)
+		d = {"action": "client_alert", # 1.3.6.1.4.1.37476.2.4.1.3
+		     "targets": server_targets,
+		     "motion_port": config.motion_stream_port,
+		     "simulation": "0"}
+		requests.post("http://{0}:{1}".format(client_ip, client_port), data=d)
+
     def do_POST(self):
 	# https://stackoverflow.com/questions/4233218/python-how-do-i-get-key-value-pairs-from-the-basehttprequesthandler-http-post-h
-	# TODO: do we need the cgi package, or can we use functions available in this class (e.g. self_parse_qs?)
+	# Question: Do we need the cgi package, or can we use functions available in this class (e.g. self_parse_qs?)
 	ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
 	if ctype == 'multipart/form-data':
 		postvars = cgi.parse_multipart(self.rfile, pdict)
@@ -145,12 +159,11 @@ function onload() {
 
 		found_g = 0
 
-		# TODO: this should be done in parallel threads, so that we can notify every client as fast as possible!
-		for x in g_subscribed:
-			client_ip      = x[0]
-			client_port    = x[1]
-			client_expires = x[2]
-			client_targets = x[3]
+		for subscriber in g_subscribed:
+			client_ip      = subscriber[0]
+			client_port    = subscriber[1]
+			client_expires = subscriber[2]
+			client_targets = subscriber[3]
 			found_c = 0
 			for st in server_targets:
 				for ct in client_targets:
@@ -158,16 +171,12 @@ function onload() {
 						found_c = found_c + 1
 						found_g = found_g + 1
 			if found_c > 0:
-				print "ALERT: Will alert client http://{0}:{1} and tell that targets {2} sent an alert".format(client_ip, client_port, server_targets)
-				d = {"action": "client_alert", # 1.3.6.1.4.1.37476.2.4.1.3
-				     "targets": server_targets,
-				     "motion_port": config.motion_stream_port,
-				     "simulation": "0"}
-				requests.post("http://{0}:{1}".format(client_ip, client_port), data=d)
+				# Notify clients via threads, so that all clients are equally fast notified
+				thread = threading.Thread(target=self.thr_client_notify, args=(client_ip, client_port, server_targets, ))
+				thread.start()
 
 		if found_g == 0:
 			print "ALERT {0}, but nobody is listening!".format(server_targets)
-
 
 	if pvget(postvars, "action")[0] == "motion_on": # 1.3.6.1.4.1.37476.2.4.1.100
 		print "Motion start"
@@ -186,9 +195,9 @@ def pvget(ary, key):
 		return ary.get(key)
 
 def run(server_class=HTTPServer, handler_class=S, port=8085):
+	print 'Starting server, listening to port {0}...'.format(port)
 	server_address = ('', port)
 	httpd = server_class(server_address, handler_class)
-	print 'Starting httpd...'
 	httpd.serve_forever()
 
 def ismotionrunning():

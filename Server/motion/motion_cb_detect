@@ -3,7 +3,7 @@
 DIR=$( dirname "$0" )
 
 # Only report every 30 seconds
-DETFIL="/tmp/last_motion_detect.ts"
+DETFIL="/tmp/last_motion_detect_$USER.ts"
 if [ -f "$DETFIL" ]; then
 	if test "`find "$DETFIL" -mmin -0,5`"; then
 		# Neuer als 30 Sekunden. Nix machen
