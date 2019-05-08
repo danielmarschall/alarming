@@ -85,12 +85,12 @@ function onload() {
 	output = output + '<h2>Subscribers</h2>'
 
 	found_subs = 0
-	for x in g_subscribed[:]:
-		if int(time.time()) > x[2]:
-			g_subscribed.remove(x)
+	for subscriber in g_subscribed[:]:
+		if int(time.time()) > subscriber[2]:
+			g_subscribed.remove(subscriber)
 		else:
 			found_subs = found_subs + 1
-			output = output + "<p>{0}:{1}</p>".format(x[0], x[1])
+			output = output + "<p>{0}:{1}</p>".format(subscriber[0], subscriber[1])
 
 	if found_subs == 0:
 		output = output + '<p>None</p>'
@@ -138,11 +138,11 @@ function onload() {
 		print "Client subscribed: {0}:{1}, searching for targets {2}".format(client_ip, client_port, client_targets)
 
 		# Remove all expired entries, and previous entries of that client
-		for x in g_subscribed[:]:
-			if int(time.time()) > x[2]:
-				g_subscribed.remove(x)
-			elif (x[0] == client_ip) and (x[1] == client_port) and (x[3] == client_targets):
-				g_subscribed.remove(x)
+		for subscriber in g_subscribed[:]:
+			if int(time.time()) > subscriber[2]:
+				g_subscribed.remove(subscriber)
+			elif (subscriber[0] == client_ip) and (subscriber[1] == client_port) and (subscriber[3] == client_targets):
+				g_subscribed.remove(subscriber)
 
 		# Now add our new client
 		g_subscribed.append([client_ip, client_port, client_expires, client_targets])
@@ -159,21 +159,25 @@ function onload() {
 
 		found_g = 0
 
-		for subscriber in g_subscribed:
+		for subscriber in g_subscribed[:]:
 			client_ip      = subscriber[0]
 			client_port    = subscriber[1]
 			client_expires = subscriber[2]
 			client_targets = subscriber[3]
-			found_c = 0
-			for st in server_targets:
-				for ct in client_targets:
-					if ct == st:
-						found_c = found_c + 1
-						found_g = found_g + 1
-			if found_c > 0:
-				# Notify clients via threads, so that all clients are equally fast notified
-				thread = threading.Thread(target=self.thr_client_notify, args=(client_ip, client_port, server_targets, ))
-				thread.start()
+
+			if int(time.time()) > client_expires:
+				g_subscribed.remove(subscriber)
+			else:
+				found_c = 0
+				for st in server_targets:
+					for ct in client_targets:
+						if ct == st:
+							found_c = found_c + 1
+							found_g = found_g + 1
+				if found_c > 0:
+					# Notify clients via threads, so that all clients are equally fast notified
+					thread = threading.Thread(target=self.thr_client_notify, args=(client_ip, client_port, server_targets, ))
+					thread.start()
 
 		if found_g == 0:
 			print "ALERT {0}, but nobody is listening!".format(server_targets)
