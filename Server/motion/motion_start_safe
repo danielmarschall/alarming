@@ -11,5 +11,7 @@ if (preg_match("@Bus (.{3}) Device (.{3}): ID (.{4}):(.{4}) Logitech, Inc. Webca
 	system(escapeshellcmd(__DIR__.'/usbreset').' '.escapeshellarg("/dev/bus/usb/".$m[1]."/".$m[2]));
 }
 
+sleep(10);
+
 system("service motion start");
 

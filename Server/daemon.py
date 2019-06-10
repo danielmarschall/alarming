@@ -10,8 +10,10 @@ import requests
 import subprocess
 import config
 import threading
+import subprocess as sp
 
 g_subscribed = []
+g_bellListenerProc = None
 
 class S(BaseHTTPRequestHandler):
     def _output(self, code, content):
@@ -126,6 +128,7 @@ function onload() {
 	# ---
 
 	global g_subscribed
+	global g_bellListenerProc
 
 	if pvget(postvars, "action")[0] == "client_subscribe": # 1.3.6.1.4.1.37476.2.4.1.1
 		client_ip      = self.client_address[0]
@@ -184,11 +187,16 @@ function onload() {
 
 	if pvget(postvars, "action")[0] == "motion_on": # 1.3.6.1.4.1.37476.2.4.1.100
 		print "Motion start"
-		os.system(os.path.dirname(os.path.abspath(__file__)) + "/motion/motion_start_safe")
-
+		if config.enable_motion_detect:
+			os.system(os.path.dirname(os.path.abspath(__file__)) + "/motion/motion_start_safe")
+		if config.enable_doorbell_listener:
+	                g_bellListenerProc = sp.Popen(['python3',os.path.dirname(os.path.abspath(__file__)) + "/doorbell/bell_listener.py"])
 	if pvget(postvars, "action")[0] == "motion_off": # 1.3.6.1.4.1.37476.2.4.1.101
 		print "Motion stop"
-		os.system(os.path.dirname(os.path.abspath(__file__)) + "/motion/motion_stop_safe")
+		if config.enable_motion_detect:
+			os.system(os.path.dirname(os.path.abspath(__file__)) + "/motion/motion_stop_safe")
+		if config.enable_doorbell_listener:
+	                sp.Popen.terminate(g_bellListenerProc)
 
 	self._output(200, '')
 
