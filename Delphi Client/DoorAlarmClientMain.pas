@@ -1,6 +1,7 @@
 unit DoorAlarmClientMain;
 
-// TODO: make configurable, which actions should be executed (e.g. run programs) when a motion was detected
+// TODO: make configurable, which actions should be executed (e.g. run programs) when a motion was detected, with different event sounds etc
+// TODO: ask server to subscribe/unsubscribe to events (doorbell, motion)
 
 interface
 
@@ -11,6 +12,8 @@ uses
   JPEG, MJPEGDecoderUnit, IniFiles, Menus;
 
 type
+  TAlarmType = (atUnknown, atMotion, atDoorbell);
+
   TForm1 = class(TForm)
     Image1: TImage;
     TrayIcon1: TTrayIcon;
@@ -26,6 +29,11 @@ type
     N2: TMenuItem;
     Stopalarm1: TMenuItem;
     Gotocontrolpanelwebsite1: TMenuItem;
+    doorbellPanel: TPanel;
+    N3: TMenuItem;
+    Ignoredoorbell1: TMenuItem;
+    Ignoremotionalert1: TMenuItem;
+    unknownAlarm: TPanel;
     procedure FormDestroy(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure TrayIcon1Click(Sender: TObject);
@@ -52,7 +60,7 @@ type
     procedure WMQueryEndSession(var Message: TWMQueryEndSession); message WM_QUERYENDSESSION;
     procedure StartStream;
     procedure StopStream;
-    procedure DoShowForm;
+    procedure DoShowForm(AlarmType: TAlarmType);
     procedure DoPosition;
     procedure StopMusic;
     function ControlServerUrl: string;
@@ -269,7 +277,10 @@ begin
 
   DoPosition;
 
+  // Question: Should these settings also be saved for the next program session?
   Allowmutingsoundinterface1.Checked := ini.ReadBool('Client', 'AllowMute', false);
+  Ignoredoorbell1.Checked := ini.ReadBool('Client', 'IgnoreDoorbell', false);
+  Ignoremotionalert1.Checked := ini.ReadBool('Client', 'IgnoreMotion', false);
 
   UpdateIPTimerTimer(UpdateIPTimer);
   UpdateIPTimer.Interval := ini.ReadInteger('Client', 'SubscribeInterval', 30*60) * 1000;
@@ -288,12 +299,14 @@ end;
 
 procedure TForm1.FormHide(Sender: TObject);
 begin
-  StopStream;
+  if Image2.Visible then
+    StopStream;
 end;
 
 procedure TForm1.FormShow(Sender: TObject);
 begin
-  StartStream;
+  if Image2.Visible then
+    StartStream;
 end;
 
 procedure TForm1.Gotocontrolpanelwebsite1Click(Sender: TObject);
@@ -309,6 +322,7 @@ end;
 procedure TForm1.ServerCommandGet(AContext: TIdContext; ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo);
 var
   AutoCloseTimerInterval: integer;
+  AlarmType: TAlarmType;
 begin
   aResponseInfo.ResponseNo  := 200;
   aResponseInfo.ContentType := 'text/html';
@@ -343,7 +357,27 @@ begin
         CloseTimer.Enabled := true;
       end;
 
-      DoShowForm;
+      if ARequestInfo.Params.IndexOf('targets=1.3.6.1.4.1.37476.2.4.2.1002' {camera, motion}) >= 0 then
+        AlarmType := atMotion
+      else if ARequestInfo.Params.IndexOf('targets=1.3.6.1.4.1.37476.2.4.2.2001' {sound, doorbell}) >= 0 then
+        AlarmType := atDoorbell
+      else
+      begin
+        // TODO: Make plugin DLLs ?
+        AlarmType := atUnknown;
+      end;
+
+      // Attention: Ignoring these events at the client does not prevent the server
+      // doing other actions (e.g. ask Spotify to stop the music on connected devices)
+      if Ignoredoorbell1.Checked and (AlarmType = atDoorbell) then Exit;
+      if Ignoremotionalert1.Checked and (AlarmType = atMotion) then Exit;
+
+      if AlarmType = atUnknown then
+      begin
+        unknownAlarm.ShowHint := true;
+        unknownAlarm.Hint := ARequestInfo.Params.Text;
+      end;
+      DoShowForm(AlarmType);
 
       if ini.ReadBool('Client', 'AutoPopup', true) then
       begin
@@ -369,7 +403,7 @@ begin
   Application.Restore;
   WindowState := wsNormal;
   FormStyle := fsNormal;
-  DoShowForm;
+  DoShowForm(atMotion);
 end;
 
 procedure TForm1.UpdateIPTimerTimer(Sender: TObject);
@@ -385,6 +419,7 @@ begin
       lParamList.Add('ttl='+IntToStr((UpdateIPTimer.Interval div 1000) * 2 + 10));
       lParamList.Add('targets=1.3.6.1.4.1.37476.2.4.2.0');    // Any
       lParamList.Add('targets=1.3.6.1.4.1.37476.2.4.2.1002'); // Motion, camera
+      lParamList.Add('targets=1.3.6.1.4.1.37476.2.4.2.2001'); // Sound, doorbell
 
       idhttp := TIdHTTP.Create(nil);
       try
@@ -427,8 +462,15 @@ begin
   Self.Top := Screen.Height - Self.Height - _TaskBarHeight;
 end;
 
-procedure TForm1.DoShowForm;
+procedure TForm1.DoShowForm(AlarmType: TAlarmType);
 begin
+  Image1.Visible := AlarmType = atMotion;
+  Image2.Visible := AlarmType = atMotion;
+
+  // BUGBUG! TODO: This does not work. The panels are not visible for some reason! I just get a white window!
+  doorbellPanel.Visible := AlarmType = atDoorbell;
+  unknownAlarm.Visible := AlarmType = atUnknown;
+
   if ini.ReadBool('Client', 'AutoReposition', true) then
   begin
     DoPosition;

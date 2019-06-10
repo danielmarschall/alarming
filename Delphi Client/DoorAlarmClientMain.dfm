@@ -5477,6 +5477,42 @@ object Form1: TForm1
     ExplicitWidth = 232
     ExplicitHeight = 168
   end
+  object doorbellPanel: TPanel
+    Left = 8
+    Top = 152
+    Width = 242
+    Height = 73
+    Caption = 'DOOR BELL !'
+    Color = clRed
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -27
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentBackground = False
+    ParentFont = False
+    TabOrder = 0
+    Visible = False
+  end
+  object unknownAlarm: TPanel
+    Left = 8
+    Top = 152
+    Width = 242
+    Height = 73
+    Caption = 'UNKNOWN'
+    Color = clRed
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -27
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentBackground = False
+    ParentFont = False
+    ParentShowHint = False
+    ShowHint = True
+    TabOrder = 1
+    Visible = False
+  end
   object TrayIcon1: TTrayIcon
     PopupMenu = PopupMenu1
     Visible = True
@@ -5490,6 +5526,17 @@ object Form1: TForm1
     object Allowmutingsoundinterface1: TMenuItem
       AutoCheck = True
       Caption = 'Allow muting sound interfaces'
+    end
+    object N3: TMenuItem
+      Caption = '-'
+    end
+    object Ignoredoorbell1: TMenuItem
+      AutoCheck = True
+      Caption = 'Ignore door bell'
+    end
+    object Ignoremotionalert1: TMenuItem
+      AutoCheck = True
+      Caption = 'Ignore motion alert'
     end
     object N1: TMenuItem
       Caption = '-'
