@@ -186,12 +186,14 @@ function onload() {
 			print "ALERT {0}, but nobody is listening!".format(server_targets)
 
 	if pvget(postvars, "action")[0] == "motion_on": # 1.3.6.1.4.1.37476.2.4.1.100
+		# TODO: Actually, we should call this API "alarm_on" instead of "motion_on", since we also enable a doorbell checker
 		print "Motion start"
 		if config.enable_motion_detect:
 			os.system(os.path.dirname(os.path.abspath(__file__)) + "/motion/motion_start_safe")
 		if config.enable_doorbell_listener:
-	                g_bellListenerProc = sp.Popen(['python3',os.path.dirname(os.path.abspath(__file__)) + "/doorbell/bell_listener.py"])
+	                g_bellListenerProc = sp.Popen([os.path.dirname(os.path.abspath(__file__)) + "/doorbell/bell_listener.py"])
 	if pvget(postvars, "action")[0] == "motion_off": # 1.3.6.1.4.1.37476.2.4.1.101
+		# TODO: Actually, we should call this API "alarm_off" instead of "motion_off", since we also disable a doorbell checker
 		print "Motion stop"
 		if config.enable_motion_detect:
 			os.system(os.path.dirname(os.path.abspath(__file__)) + "/motion/motion_stop_safe")
