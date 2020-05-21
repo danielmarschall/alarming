@@ -5538,6 +5538,10 @@ object Form1: TForm1
       AutoCheck = True
       Caption = 'Ignore motion alert'
     end
+    object Simulatealarm1: TMenuItem
+      Caption = 'Simulate alarm'
+      OnClick = Simulatealarm1Click
+    end
     object N1: TMenuItem
       Caption = '-'
     end

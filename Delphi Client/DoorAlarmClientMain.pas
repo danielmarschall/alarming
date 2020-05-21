@@ -34,6 +34,7 @@ type
     Ignoredoorbell1: TMenuItem;
     Ignoremotionalert1: TMenuItem;
     unknownAlarm: TPanel;
+    Simulatealarm1: TMenuItem;
     procedure FormDestroy(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure TrayIcon1Click(Sender: TObject);
@@ -48,6 +49,7 @@ type
     procedure Stopalarm1Click(Sender: TObject);
     procedure Gotocontrolpanelwebsite1Click(Sender: TObject);
     procedure ImageClick(Sender: TObject);
+    procedure Simulatealarm1Click(Sender: TObject);
   private
     MJPEGDecoder: TMJPEGDecoder;
     LastDingDong: TDateTime;
@@ -100,8 +102,10 @@ var
   lParamList: TStringList;
   idhttp: TIdHttp;
 begin
-  try
+  //try
     try
+      UpdateIPTimerTimer(UpdateIPTimer); // make sure we are registered
+
       lParamList := TStringList.Create;
       lParamList.Add('action=motion_off'); // 1.3.6.1.4.1.37476.2.4.1.101
 
@@ -114,9 +118,9 @@ begin
     finally
       FreeAndNil(lParamList);
     end;
-  except
+  //except
     // Nothing
-  end;
+  //end;
 end;
 
 procedure TForm1.StopMusic;
@@ -179,8 +183,10 @@ var
   lParamList: TStringList;
   idhttp: TIdHttp;
 begin
-  try
+  //try
     try
+      UpdateIPTimerTimer(UpdateIPTimer); // make sure we are registered
+
       lParamList := TStringList.Create;
       lParamList.Add('action=motion_on'); // 1.3.6.1.4.1.37476.2.4.1.100
 
@@ -193,9 +199,9 @@ begin
     finally
       FreeAndNil(lParamList);
     end;
-  except
+  //except
     // Nothing
-  end;
+  //end;
 end;
 
 procedure TForm1.StartStream;
@@ -395,6 +401,33 @@ begin
       SimpleCS := false;
     end;
   end;
+end;
+
+procedure TForm1.Simulatealarm1Click(Sender: TObject);
+var
+  lParamList: TStringList;
+  idhttp: TIdHttp;
+begin
+  //try
+    try
+      lParamList := TStringList.Create;
+      lParamList.Add('action=server_alert'); // 1.3.6.1.4.1.37476.2.4.1.2
+      lParamList.Add('targets=1.3.6.1.4.1.37476.2.4.2.0');    // Any
+      lParamList.Add('targets=1.3.6.1.4.1.37476.2.4.2.1002'); // Motion, camera
+      lParamList.Add('targets=1.3.6.1.4.1.37476.2.4.2.2001'); // Sound, doorbell
+
+      idhttp := TIdHTTP.Create(nil);
+      try
+        idhttp.Post(ControlServerUrl, lParamList);
+      finally
+        FreeAndNil(idhttp);
+      end;
+    finally
+      FreeAndNil(lParamList);
+    end;
+  //except
+    // Nothing
+  //end;
 end;
 
 procedure TForm1.TrayIcon1Click(Sender: TObject);
