@@ -198,7 +198,8 @@ function onload() {
 		if config.enable_motion_detect:
 			os.system(os.path.dirname(os.path.abspath(__file__)) + "/motion/motion_stop_safe")
 		if config.enable_doorbell_listener:
-	                sp.Popen.terminate(g_bellListenerProc)
+			if g_bellListenerProc != None:
+		                sp.Popen.terminate(g_bellListenerProc)
 
 	self._output(200, '')
 
