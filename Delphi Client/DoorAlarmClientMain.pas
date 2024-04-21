@@ -127,10 +127,10 @@ procedure TForm1.StopMusic;
 const
   TIMEOUT = 1000; // ms
 var
-  lpdwResult: DWORD;
+  lpdwResult: PDWORD_PTR;
 begin
   // Stops Spotify, WMP, etc.
-  lpdwResult := 0;
+  lpdwResult := nil;
   SendMessageTimeout(HWND_BROADCAST, WM_APPCOMMAND, 0, MAKELONG(0, APPCOMMAND_MEDIA_STOP), SMTO_NORMAL, TIMEOUT, lpdwResult);
 
   // Mutes everything (also YouTube)
