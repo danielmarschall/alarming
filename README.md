@@ -1,7 +1,7 @@
 # Alarming / Motion detection
 
-Eine Client/Server-Anwendung, die bei gewissen Ereignissen, z.B. einer Bewegung auf einer Webcam, bei verbundenen Clients ein Fenster mit dem Webcam-Bild öffnet sowie laufende Musik stoppt. Kann mit dem [Spotify Control Panel](https://www.daniel-marschall.de/spotify_control/ "Spotify Control Panel ") kombiniert werden.
+A client/server application that, when certain events occur, such as movement on a webcam, opens a window with the webcam image for connected clients and stops playing music. Can be combined with the [Spotify Control Panel](https://www.daniel-marschall.de/spotify_control/).
 
-Der Server läuft unter Linux und erfordert das Programm "motion"
+The server runs on Linux and requires the "motion" program
 
 The client is running on Windows.
